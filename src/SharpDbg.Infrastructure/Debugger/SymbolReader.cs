@@ -16,7 +16,7 @@ public class SymbolReader : IDisposable
 	private readonly PEReader _peReader;
 	private readonly MetadataReader _reader;
 	private readonly MetadataReader _peMetadataReader;
-	private string _path;
+	private string? _path;
 
 	/// <summary>
 	/// Result of resolving a breakpoint location
@@ -43,7 +43,7 @@ public class SymbolReader : IDisposable
 		public int LastUserCodeIlOffset { get; set; }
 	}
 
-	private SymbolReader(MetadataReaderProvider provider, PEReader peReader, MetadataReader reader, MetadataReader peMetadataReader, string assemblyPath)
+	private SymbolReader(MetadataReaderProvider provider, PEReader peReader, MetadataReader reader, MetadataReader peMetadataReader, string? assemblyPath)
 	{
 		_provider = provider;
 		_peReader = peReader;
@@ -87,16 +87,40 @@ public class SymbolReader : IDisposable
 		}
 	}
 
+	public static SymbolReader? TryLoadFromBytes(byte[] inMemoryModuleBytes)
+	{
+		try
+		{
+			using var stream = new MemoryStream(inMemoryModuleBytes, writable: false);
+			return TryLoadInternal(stream);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
 	private static SymbolReader? TryLoadFromAssembly(string assemblyPath)
 	{
 		if (!File.Exists(assemblyPath))
 			return null;
-
 		try
 		{
 			using var peStream = File.OpenRead(assemblyPath);
+			return TryLoadInternal(peStream, assemblyPath);
+		}
+		catch
+		{
+			return null;
+		}
+	}
+
+	private static SymbolReader? TryLoadInternal(Stream assemblyStream, string? assemblyPath = null)
+	{
+		try
+		{
 			// no longer disposing via using, as the PEReader needs to stay alive while using the MetadataReader
-			var peReader = new PEReader(peStream);
+			var peReader = new PEReader(assemblyStream);
 
 			// Look for debug directory entries
 			DebugDirectoryEntry codeViewEntry = default;
@@ -141,7 +165,7 @@ public class SymbolReader : IDisposable
 		return null;
 	}
 
-	private static SymbolReader? TryLoadFromCodeView(PEReader peReader, DebugDirectoryEntry codeViewEntry, string assemblyPath)
+	private static SymbolReader? TryLoadFromCodeView(PEReader peReader, DebugDirectoryEntry codeViewEntry, string? assemblyPath)
 	{
 		try
 		{
@@ -191,7 +215,7 @@ public class SymbolReader : IDisposable
 			var provider = peReader.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
 			var reader = provider.GetMetadataReader();
 			var peMetadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
-			return new SymbolReader(provider, peReader, reader, peMetadataReader, null!);
+			return new SymbolReader(provider, peReader, reader, peMetadataReader, null);
 		}
 		catch
 		{

@@ -52,7 +52,17 @@ public partial class ManagedDebugger
 		SymbolReader? symbolReader = null;
 		try
 		{
-			symbolReader = SymbolReader.TryLoad(modulePath);
+			if (corModule.IsInMemory)
+			{
+				var size = corModule.Size;
+				var baseAddress2 = corModule.BaseAddress;
+				var bytes = _process.ReadMemory(baseAddress2, size);
+				symbolReader = SymbolReader.TryLoadFromBytes(bytes);
+			}
+			else
+			{
+				symbolReader = SymbolReader.TryLoad(modulePath);
+			}
 			if (symbolReader != null)
 			{
 				_logger?.Invoke($"  Symbols loaded for {moduleName}");
