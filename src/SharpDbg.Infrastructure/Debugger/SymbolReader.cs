@@ -10,7 +10,7 @@ namespace SharpDbg.Infrastructure.Debugger;
 /// <summary>
 /// Reads portable PDB files and resolves source locations to IL offsets
 /// </summary>
-public class SymbolReader : IDisposable
+public partial class SymbolReader : IDisposable
 {
 	private readonly MetadataReaderProvider _provider;
 	private readonly PEReader _peReader;
@@ -221,101 +221,6 @@ public class SymbolReader : IDisposable
 		{
 			return null;
 		}
-	}
-
-	/// <summary>
-	/// Try to resolve a breakpoint at the given source location
-	/// </summary>
-	/// <param name="sourceFilePath">Full path to the source file</param>
-	/// <param name="line">1-based line number</param>
-	/// <returns>Resolved breakpoint info, or null if no valid sequence point found</returns>
-	public ResolvedBreakpoint? ResolveBreakpoint(string sourceFilePath, int line)
-	{
-		// Normalize path for comparison
-		var normalizedPath = NormalizePath(sourceFilePath);
-
-		// Find the document handle for this source file
-		DocumentHandle? documentHandle = null;
-		foreach (var handle in _reader.Documents)
-		{
-			var document = _reader.GetDocument(handle);
-			var docPath = _reader.GetString(document.Name);
-			if (PathsMatch(normalizedPath, docPath))
-			{
-				documentHandle = handle;
-				break;
-			}
-		}
-
-		if (documentHandle == null)
-			return null;
-
-		// Search all methods for sequence points in this document at or after the requested line
-		ResolvedBreakpoint? bestMatch = null;
-
-		foreach (var methodDebugInfoHandle in _reader.MethodDebugInformation)
-		{
-			var methodDebugInfo = _reader.GetMethodDebugInformation(methodDebugInfoHandle);
-
-			// Skip methods without sequence points
-			if (methodDebugInfo.SequencePointsBlob.IsNil)
-				continue;
-
-			foreach (var sp in methodDebugInfo.GetSequencePoints())
-			{
-				// Skip hidden sequence points
-				if (sp.IsHidden)
-					continue;
-
-				// Check if this sequence point is in the target document
-				// Note: sp.Document can be default if it's the same as the method's document
-				var spDocument = sp.Document.IsNil ? methodDebugInfo.Document : sp.Document;
-				if (spDocument != documentHandle)
-					continue;
-
-				// Check if this sequence point covers or is at/after the requested line
-				if (sp.StartLine <= line && sp.EndLine >= line && sp.StartLine == sp.EndLine)
-				{
-					// Exact match - line is within this sequence point
-					var methodToken = MetadataTokens.GetToken(methodDebugInfoHandle.ToDefinitionHandle());
-					var docPath = _reader.GetString(_reader.GetDocument(spDocument).Name);
-
-					return new ResolvedBreakpoint(
-						methodToken,
-						sp.Offset,
-						sp.StartLine,
-						sp.EndLine,
-						sp.StartColumn,
-						sp.EndColumn,
-						docPath
-					);
-				}
-				else if (sp.StartLine > line)
-				{
-					// Sequence point is after requested line - could be the next valid location
-					var methodToken = MetadataTokens.GetToken(methodDebugInfoHandle.ToDefinitionHandle());
-					var docPath = _reader.GetString(_reader.GetDocument(spDocument).Name);
-
-					var candidate = new ResolvedBreakpoint(
-						methodToken,
-						sp.Offset,
-						sp.StartLine,
-						sp.EndLine,
-						sp.StartColumn,
-						sp.EndColumn,
-						docPath
-					);
-
-					// Keep the closest one after the requested line
-					if (bestMatch == null || sp.StartLine < bestMatch.StartLine)
-					{
-						bestMatch = candidate;
-					}
-				}
-			}
-		}
-
-		return bestMatch;
 	}
 
 	public (string sourceFilePath, int startLine, int endLine, int startColumn, int endColumn)? GetSourceLocationForOffset(int methodToken, int ilOffset)
