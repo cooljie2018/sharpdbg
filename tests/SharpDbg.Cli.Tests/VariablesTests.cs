@@ -8,83 +8,83 @@ namespace SharpDbg.Cli.Tests;
 public class VariablesTests(ITestOutputHelper testOutputHelper)
 {
 	[Fact]
-    public async Task SyncMethod_VariablesRequest_ReturnsCorrectVariables()
-    {
-	    var startSuspended = true;
+	public async Task SyncMethod_VariablesRequest_ReturnsCorrectVariables()
+	{
+		var startSuspended = true;
 
-	    var (debugProtocolHost, initializedEventTcs, stoppedEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
-	    using var _ = adapter;
-	    using var __ = new ProcessKiller(p2);
+		var (debugProtocolHost, initializedEventTcs, stoppedEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
+		using var _ = adapter;
+		using var __ = new ProcessKiller(p2);
 
-	    await debugProtocolHost
-		    .WithInitializeRequest()
-		    .WithAttachRequest(p2.Id)
-		    .WaitForInitializedEvent(initializedEventTcs);
-	    debugProtocolHost
-		    .WithBreakpointsRequest()
-		    .WithConfigurationDoneRequest()
-		    .WithOptionalResumeRuntime(p2.Id, startSuspended);
+		await debugProtocolHost
+			.WithInitializeRequest()
+			.WithAttachRequest(p2.Id)
+			.WaitForInitializedEvent(initializedEventTcs);
+		debugProtocolHost
+			.WithBreakpointsRequest()
+			.WithConfigurationDoneRequest()
+			.WithOptionalResumeRuntime(p2.Id, startSuspended);
 
-	    var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(stoppedEventTcs);
-	    debugProtocolHost
-		    .WithStackTraceRequest(stoppedEvent.ThreadId!.Value, out var stackTraceResponse)
-		    .WithScopesRequest(stackTraceResponse.StackFrames!.First().Id, out var scopesResponse);
+		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(stoppedEventTcs);
+		debugProtocolHost
+			.WithStackTraceRequest(stoppedEvent.ThreadId!.Value, out var stackTraceResponse)
+			.WithScopesRequest(stackTraceResponse.StackFrames!.First().Id, out var scopesResponse);
 
-	    scopesResponse.Scopes.Should().HaveCount(1);
-	    var scope = scopesResponse.Scopes.Single();
+		scopesResponse.Scopes.Should().HaveCount(1);
+		var scope = scopesResponse.Scopes.Single();
 
-	    List<Variable> expectedVariables =
-	    [
-		    new() {Name = "this", Value = "{DebuggableConsoleApp.MyClass}", Type = "DebuggableConsoleApp.MyClass", EvaluateName = "this", VariablesReference = 3 },
-		    new() {Name = "myParam", Value = "13", Type = "long", EvaluateName = "myParam" },
-		    new() {Name = "myIntParam", Value = "6", Type = "int", EvaluateName = "myIntParam" },
-		    new() {Name = "myInt", Value = "4", Type = "int", EvaluateName = "myInt" },
-		    new() {Name = "enumVar", Value = "SecondValue", Type = "DebuggableConsoleApp.MyEnum", EvaluateName = "enumVar", VariablesReference = 4 },
-		    new() {Name = "enumWithFlagsVar", Value = "FlagValue1 | FlagValue3", Type = "DebuggableConsoleApp.MyEnumWithFlags", EvaluateName = "enumWithFlagsVar", VariablesReference = 5 },
-		    new() {Name = "nullableInt", Value = "null", Type = "int?", EvaluateName = "nullableInt" },
-		    new() {Name = "structVar", Value = "{DebuggableConsoleApp.MyStruct}", Type = "DebuggableConsoleApp.MyStruct", EvaluateName = "structVar", VariablesReference = 6 },
-		    new() {Name = "nullableIntWithVal", Value = "4", Type = "int?", EvaluateName = "nullableIntWithVal" },
-		    new() {Name = "nullableRefType", Value = "null", Type = "DebuggableConsoleApp.MyClass", EvaluateName = "nullableRefType" },
-		    new() {Name = "anotherVar", Value = "asdf", Type = "string", EvaluateName = "anotherVar" },
-	    ];
+		List<Variable> expectedVariables =
+		[
+			new() {Name = "this", Value = "{DebuggableConsoleApp.MyClass}", Type = "DebuggableConsoleApp.MyClass", EvaluateName = "this", VariablesReference = 3 },
+			new() {Name = "myParam", Value = "13", Type = "long", EvaluateName = "myParam" },
+			new() {Name = "myIntParam", Value = "6", Type = "int", EvaluateName = "myIntParam" },
+			new() {Name = "myInt", Value = "4", Type = "int", EvaluateName = "myInt" },
+			new() {Name = "enumVar", Value = "SecondValue", Type = "DebuggableConsoleApp.MyEnum", EvaluateName = "enumVar", VariablesReference = 4 },
+			new() {Name = "enumWithFlagsVar", Value = "FlagValue1 | FlagValue3", Type = "DebuggableConsoleApp.MyEnumWithFlags", EvaluateName = "enumWithFlagsVar", VariablesReference = 5 },
+			new() {Name = "nullableInt", Value = "null", Type = "int?", EvaluateName = "nullableInt" },
+			new() {Name = "structVar", Value = "{DebuggableConsoleApp.MyStruct}", Type = "DebuggableConsoleApp.MyStruct", EvaluateName = "structVar", VariablesReference = 6 },
+			new() {Name = "nullableIntWithVal", Value = "4", Type = "int?", EvaluateName = "nullableIntWithVal" },
+			new() {Name = "nullableRefType", Value = "null", Type = "DebuggableConsoleApp.MyClass", EvaluateName = "nullableRefType" },
+			new() {Name = "anotherVar", Value = "asdf", Type = "string", EvaluateName = "anotherVar" },
+		];
 
-	    debugProtocolHost.WithVariablesRequest(scope.VariablesReference, out var variables);
+		debugProtocolHost.WithVariablesRequest(scope.VariablesReference, out var variables);
 
-	    variables.Should().HaveCount(11);
-	    variables.Should().BeEquivalentTo(expectedVariables);
-	    debugProtocolHost.AssertStructMemberVariables(variables.Single(s => s.Name == "structVar").VariablesReference);
-	    debugProtocolHost.AssertInstanceThisInstanceVariables(variables.Single(s => s.Name == "this").VariablesReference);
+		variables.Should().HaveCount(11);
+		variables.Should().BeEquivalentTo(expectedVariables);
+		debugProtocolHost.AssertStructMemberVariables(variables.Single(s => s.Name == "structVar").VariablesReference);
+		debugProtocolHost.AssertInstanceThisInstanceVariables(variables.Single(s => s.Name == "this").VariablesReference);
 
-	    List<Variable> expectedEnumVariables =
-	    [
-		    new() {Name = "Static members", Value = "", Type = "", EvaluateName = "Static members", VariablesReference = 34, PresentationHint = new VariablePresentationHint { Kind = VariablePresentationHint.KindValue.Class }},
-		    new() {Name = "value__", Value = "1", Type = "int", EvaluateName = "value__" },
-	    ];
+		List<Variable> expectedEnumVariables =
+		[
+			new() {Name = "Static members", Value = "", Type = "", EvaluateName = "Static members", VariablesReference = 34, PresentationHint = new VariablePresentationHint { Kind = VariablePresentationHint.KindValue.Class }},
+			new() {Name = "value__", Value = "1", Type = "int", EvaluateName = "value__" },
+		];
 
-	    debugProtocolHost.WithVariablesRequest(variables.Single(s => s.Name == "enumVar").VariablesReference, out var enumNestedVariables);
-	    enumNestedVariables.Should().BeEquivalentTo(expectedEnumVariables);
+		debugProtocolHost.WithVariablesRequest(variables.Single(s => s.Name == "enumVar").VariablesReference, out var enumNestedVariables);
+		enumNestedVariables.Should().BeEquivalentTo(expectedEnumVariables);
 
-	    List<Variable> expectedEnumStaticMemberVariables =
-	    [
-		    new() { Name = "FirstValue", Value = "0", Type = "int", EvaluateName = "FirstValue" },
-		    new() { Name = "SecondValue", Value = "1", Type = "int", EvaluateName = "SecondValue" },
-		    new() { Name = "ThirdValue", Value = "2", Type = "int", EvaluateName = "ThirdValue" },
-	    ];
+		List<Variable> expectedEnumStaticMemberVariables =
+		[
+			new() { Name = "FirstValue", Value = "0", Type = "int", EvaluateName = "FirstValue" },
+			new() { Name = "SecondValue", Value = "1", Type = "int", EvaluateName = "SecondValue" },
+			new() { Name = "ThirdValue", Value = "2", Type = "int", EvaluateName = "ThirdValue" },
+		];
 
-	    debugProtocolHost.WithVariablesRequest(enumNestedVariables.Single(s => s.Name == "Static members").VariablesReference, out var enumStaticVariables);
-	    enumStaticVariables.Should().BeEquivalentTo(expectedEnumStaticMemberVariables);
-	    // TODO: Assert that none of the variable references are the same (other than 0)
+		debugProtocolHost.WithVariablesRequest(enumNestedVariables.Single(s => s.Name == "Static members").VariablesReference, out var enumStaticVariables);
+		enumStaticVariables.Should().BeEquivalentTo(expectedEnumStaticMemberVariables);
+		// TODO: Assert that none of the variable references are the same (other than 0)
 
-	    var stoppedEvent2 = await debugProtocolHost
-		    .WithContinueRequest()
-		    .WaitForStoppedEvent(stoppedEventTcs);
-	    debugProtocolHost
-		    .WithStackTraceRequest(stoppedEvent2.ThreadId!.Value, out var stackTraceResponse2)
-		    .WithScopesRequest(stackTraceResponse2.StackFrames!.First().Id, out var scopesResponse2)
-		    .WithVariablesRequest(scopesResponse2.Scopes.Single().VariablesReference, out var variables2);
-	    // Assert the variables reference count resets on continue, by asserting the variables are the same as the first time (code is in a while loop)
-	    variables2.Should().BeEquivalentTo(expectedVariables);
-    }
+		var stoppedEvent2 = await debugProtocolHost
+			.WithContinueRequest()
+			.WaitForStoppedEvent(stoppedEventTcs);
+		debugProtocolHost
+			.WithStackTraceRequest(stoppedEvent2.ThreadId!.Value, out var stackTraceResponse2)
+			.WithScopesRequest(stackTraceResponse2.StackFrames!.First().Id, out var scopesResponse2)
+			.WithVariablesRequest(scopesResponse2.Scopes.Single().VariablesReference, out var variables2);
+		// Assert the variables reference count resets on continue, by asserting the variables are the same as the first time (code is in a while loop)
+		variables2.Should().BeEquivalentTo(expectedVariables);
+	}
 }
 
 file static class TestExtensions
@@ -118,7 +118,7 @@ file static class TestExtensions
 			new() { Name = "_intDictionary", EvaluateName = "_intDictionary", Value = "Count = 3", Type = "System.Collections.Generic.Dictionary<int, int>", VariablesReference = 14 },
 			new() { Name = "FieldFromBase", EvaluateName = "FieldFromBase", Value = "42", Type = "int" },
 			new() { Name = "PropertyFromBase", EvaluateName = "PropertyFromBase", Value = "84", Type = "int" },
-		    new() { Name = "Static members", Value = "", Type = "", EvaluateName = "Static members", VariablesReference = 17, PresentationHint = new VariablePresentationHint { Kind = VariablePresentationHint.KindValue.Class }},
+			new() { Name = "Static members", Value = "", Type = "", EvaluateName = "Static members", VariablesReference = 17, PresentationHint = new VariablePresentationHint { Kind = VariablePresentationHint.KindValue.Class }},
 		];
 		debugProtocolHost.WithVariablesRequest(variablesReference, out var thisInstanceVariables);
 		thisInstanceVariables.Should().BeEquivalentTo(expectedVariables);

@@ -107,8 +107,8 @@ public static partial class TestHelper
 
 	public static DebugProtocolHost WithOptionalResumeRuntime(this DebugProtocolHost debugProtocolHost, int processId, bool startSuspended)
 	{
-	    // DiagnosticsClient.ResumeRuntime seems to have a different implementation on MacOS - it will throw if the runtime is not paused...
-	    if (startSuspended) new DiagnosticsClient(processId).ResumeRuntime();
+		// DiagnosticsClient.ResumeRuntime seems to have a different implementation on MacOS - it will throw if the runtime is not paused...
+		if (startSuspended) new DiagnosticsClient(processId).ResumeRuntime();
 		return debugProtocolHost;
 	}
 
