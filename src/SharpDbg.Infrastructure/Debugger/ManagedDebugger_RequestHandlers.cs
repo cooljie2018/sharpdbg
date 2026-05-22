@@ -603,7 +603,7 @@ public partial class ManagedDebugger
 	}
 
 	/// <summary>
-	/// Disconnect from the debuggee
+	/// Disconnect from the debuggee and Dispose
 	/// </summary>
 	public void Disconnect(bool terminateDebuggee)
 	{
