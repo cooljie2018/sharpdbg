@@ -280,7 +280,7 @@ public partial class ManagedDebugger
 			{
 				break;
 			}
-			_logger?.Invoke($"Failed to deactivate breakpoint during Dispose at {bp.FilePath}:{bp.Line}: {hResult}");
+			if (hResult is not HRESULT.S_OK) _logger?.Invoke($"Failed to deactivate breakpoint during Dispose at {bp.FilePath}:{bp.Line}: {hResult}");
 		}
 		_breakpointManager.Clear();
 
