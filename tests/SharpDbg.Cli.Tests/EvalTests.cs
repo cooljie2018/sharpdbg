@@ -11,7 +11,7 @@ public class EvalTests(ITestOutputHelper testOutputHelper)
 	{
 		var startSuspended = false;
 
-		var (debugProtocolHost, initializedEventTcs, stoppedEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
+		var (debugProtocolHost, initializedEventTcs, debugEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
 		using var _ = adapter;
 		using var __ = new ProcessKiller(p2);
 		using var ___ = debugProtocolHost;
@@ -25,7 +25,7 @@ public class EvalTests(ITestOutputHelper testOutputHelper)
 			.WithConfigurationDoneRequest()
 			.WithOptionalResumeRuntime(p2.Id, startSuspended);
 
-		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(debugEventTcs);
 		debugProtocolHost
 			.WithStackTraceRequest(stoppedEvent.ThreadId!.Value, out var stackTraceResponse)
 			.WithScopesRequest(stackTraceResponse.StackFrames!.First().Id, out var scopesResponse);

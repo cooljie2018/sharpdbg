@@ -9,7 +9,7 @@ public class LambdaStepTests(ITestOutputHelper testOutputHelper)
 	public async Task SharpDbgCli_StepRequests_InLambda_Returns_StoppedEventsAtCorrectLocation()
 	{
 		var startSuspended = false;
-		var (debugProtocolHost, initializedEventTcs, stoppedEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
+		var (debugProtocolHost, initializedEventTcs, debugEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
 		using var _ = adapter;
 		using var __ = new ProcessKiller(p2);
 		using var ___ = debugProtocolHost;
@@ -24,13 +24,13 @@ public class LambdaStepTests(ITestOutputHelper testOutputHelper)
 			.WithOptionalResumeRuntime(p2.Id, startSuspended);
 
 		// we should not stop at line 21, as it is within the lambda, and it has not been invoked yet
-		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(debugEventTcs);
 		var stopInfo = stoppedEvent.ReadStopInfo();
 		stopInfo.filePath.Should().EndWith("MyLambdaClass.cs");
 		stopInfo.line.Should().Be(34);
 
 		// continue, and now we should stop at line 21 within the lambda
-		var stoppedEvent2 = await debugProtocolHost.WithContinueRequest().WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent2 = await debugProtocolHost.WithContinueRequest().WaitForStoppedEvent(debugEventTcs);
 		var stopInfo2 = stoppedEvent2.ReadStopInfo();
 		stopInfo2.filePath.Should().EndWith("MyLambdaClass.cs");
 		stopInfo2.line.Should().Be(21);
@@ -39,7 +39,7 @@ public class LambdaStepTests(ITestOutputHelper testOutputHelper)
 		debugProtocolHost.WithBreakpointsRequest(14, Path.JoinFromGitRoot("tests", "DebuggableConsoleApp", "Lambdas", "MyLambdaClass.cs"));
 
 		// Continue (while loop), and we should hit the lambda declaration breakpoint
-		var stoppedEvent3 = await debugProtocolHost.WithContinueRequest().WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent3 = await debugProtocolHost.WithContinueRequest().WaitForStoppedEvent(debugEventTcs);
 		var stopInfo3 = stoppedEvent3.ReadStopInfo();
 		stopInfo3.filePath.Should().EndWith("MyLambdaClass.cs");
 		stopInfo3.line.Should().Be(14);

@@ -10,7 +10,7 @@ public class LambdaVariablesTests(ITestOutputHelper testOutputHelper)
 	public async Task SharpDbgCli_InLambda_VariablesRequest_Returns_InScopeVariables()
 	{
 		var startSuspended = false;
-		var (debugProtocolHost, initializedEventTcs, stoppedEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
+		var (debugProtocolHost, initializedEventTcs, debugEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
 		using var _ = adapter;
 		using var __ = new ProcessKiller(p2);
 		using var ___ = debugProtocolHost;
@@ -25,7 +25,7 @@ public class LambdaVariablesTests(ITestOutputHelper testOutputHelper)
 			.WithOptionalResumeRuntime(p2.Id, startSuspended);
 
 		// stop inside the lambda
-		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(debugEventTcs);
 		var stopInfo = stoppedEvent.ReadStopInfo();
 		stopInfo.filePath.Should().EndWith("MyLambdaClass.cs");
 		stopInfo.line.Should().Be(28);

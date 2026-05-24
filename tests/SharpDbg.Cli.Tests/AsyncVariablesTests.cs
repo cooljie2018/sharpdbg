@@ -12,7 +12,7 @@ public class AsyncVariablesTests(ITestOutputHelper testOutputHelper)
 	{
 		var startSuspended = true;
 
-		var (debugProtocolHost, initializedEventTcs, stoppedEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
+		var (debugProtocolHost, initializedEventTcs, debugEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
 		using var _ = adapter;
 		using var __ = new ProcessKiller(p2);
 		using var ___ = debugProtocolHost;
@@ -26,7 +26,7 @@ public class AsyncVariablesTests(ITestOutputHelper testOutputHelper)
 			.WithConfigurationDoneRequest()
 			.WithOptionalResumeRuntime(p2.Id, startSuspended);
 
-		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(debugEventTcs);
 		debugProtocolHost
 			.WithStackTraceRequest(stoppedEvent.ThreadId!.Value, out var stackTraceResponse)
 			.WithScopesRequest(stackTraceResponse.StackFrames!.First().Id, out var scopesResponse);
@@ -50,7 +50,7 @@ public class AsyncVariablesTests(ITestOutputHelper testOutputHelper)
 		variables.Should().HaveCount(6);
 		variables.Should().BeEquivalentTo(expectedVariables);
 
-		var stoppedEvent2 = await debugProtocolHost.WithStepInRequest(stoppedEvent.ThreadId!.Value).WaitForStoppedEvent(stoppedEventTcs);
+		var stoppedEvent2 = await debugProtocolHost.WithStepInRequest(stoppedEvent.ThreadId!.Value).WaitForStoppedEvent(debugEventTcs);
 		var stopInfo = stoppedEvent2.ReadStopInfo();
 		stopInfo.filePath.Should().EndWith("AnotherClass.cs");
 		stopInfo.line.Should().Be(17);
@@ -69,7 +69,7 @@ public class AsyncVariablesTests(ITestOutputHelper testOutputHelper)
 
 		var stoppedEvent3 = await debugProtocolHost
 			.WithContinueRequest()
-			.WaitForStoppedEvent(stoppedEventTcs);
+			.WaitForStoppedEvent(debugEventTcs);
 		debugProtocolHost
 			.WithStackTraceRequest(stoppedEvent3.ThreadId!.Value, out var stackTraceResponse3)
 			.WithScopesRequest(stackTraceResponse3.StackFrames!.First().Id, out var scopesResponse3)
