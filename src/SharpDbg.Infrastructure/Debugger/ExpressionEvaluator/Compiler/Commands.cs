@@ -28,9 +28,9 @@ public class NoOperandsCommand : CommandBase
 
 public class OneOperandCommand : CommandBase
 {
-	public dynamic Argument;
+	public object Argument;
 
-	public OneOperandCommand(SyntaxKind kind, uint flags, dynamic arg)
+	public OneOperandCommand(SyntaxKind kind, uint flags, object arg)
 	{
 		OpCode = KindAlias[kind];
 		Flags = flags;
@@ -47,9 +47,9 @@ public class OneOperandCommand : CommandBase
 
 public class TwoOperandCommand : CommandBase
 {
-	public dynamic[] Arguments;
+	public object[] Arguments;
 
-	public TwoOperandCommand(SyntaxKind kind, uint flags, params dynamic[] args)
+	public TwoOperandCommand(SyntaxKind kind, uint flags, params object[] args)
 	{
 		OpCode = KindAlias[kind];
 		Flags = flags;
