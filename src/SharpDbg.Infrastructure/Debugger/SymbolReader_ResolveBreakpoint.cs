@@ -91,10 +91,10 @@ public partial class SymbolReader
 	        if (firstSP == null || sp.End() < firstSP.Value.End()) firstSP = sp;
 	        if (lastSP  == null || sp.End() > lastSP.Value.End())  lastSP  = sp;
 
-	        // Track the SP that starts latest while still containing the target line —
-	        // this is the most specific covering SP for this method
-	        if (sp.StartLine <= line && (coveringSP == null || sp.Start() > coveringSP.Value.Start()))
-	            coveringSP = sp;
+        if (sp.StartLine <= line && (coveringSP == null ||
+                sp.StartLine > coveringSP.Value.StartLine ||
+                (sp.StartLine == coveringSP.Value.StartLine && sp.StartColumn < coveringSP.Value.StartColumn)))
+                coveringSP = sp;
 	    }
 
 	    if (firstSP == null) return null;

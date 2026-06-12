@@ -114,4 +114,33 @@ public class StepTests(ITestOutputHelper testOutputHelper)
 		stopInfo2.filePath.Should().EndWith("Console.cs");
 		stopInfo2.line.Should().Be(807);
 	}
+
+	[Fact]
+	public async Task SharpDbgCli_Continue_StopsAtBreakpointOnMultilineSwitchExpression()
+	{
+		var startSuspended = true;
+
+		var (debugProtocolHost, initializedEventTcs, debugEventTcs, adapter, p2) = TestHelper.GetRunningDebugProtocolHostInProc(testOutputHelper, startSuspended);
+		using var _ = adapter;
+		using var __ = new ProcessKiller(p2);
+
+		await debugProtocolHost
+			.WithInitializeRequest()
+			.WithAttachRequest(p2.Id, false)
+			.WaitForInitializedEvent(initializedEventTcs);
+		debugProtocolHost
+			.WithBreakpointsRequest([7, 9], Path.JoinFromGitRoot("tests", "DebuggableConsoleApp", "MultilineSwitchInMethodCall.cs"))
+			.WithConfigurationDoneRequest()
+			.WithOptionalResumeRuntime(p2.Id, startSuspended);
+
+		var stoppedEvent = await debugProtocolHost.WaitForStoppedEvent(debugEventTcs);
+		var stopInfo = stoppedEvent.ReadStopInfo();
+		stopInfo.filePath.Should().EndWith("MultilineSwitchInMethodCall.cs");
+		stopInfo.line.Should().Be(7);
+
+		var stoppedEvent2 = await debugProtocolHost.WithContinueRequest().WaitForStoppedEvent(debugEventTcs);
+		var stopInfo2 = stoppedEvent2.ReadStopInfo();
+		stopInfo2.filePath.Should().EndWith("MultilineSwitchInMethodCall.cs");
+		stopInfo2.line.Should().Be(9);
+	}
 }

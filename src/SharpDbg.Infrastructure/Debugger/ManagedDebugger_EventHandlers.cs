@@ -230,6 +230,7 @@ public partial class ManagedDebugger
 		}
 
 		var (sourceFilePath, line, column, decompiledSourceInfo) = sourceInfo.Value;
+		//_logger?.Invoke($"StepComplete: method 0x{ilFrame.Function.Token} IL offset {ilFrame.IP.pnOffset}, reason: {stepCompleteEventArgs.Reason}");
 		OnStopped2?.Invoke(corThread.Id, sourceFilePath, line, column, "step", decompiledSourceInfo);
 	}
 

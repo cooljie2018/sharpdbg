@@ -23,6 +23,7 @@ public static class Program
 			myClass.MyMethod(13, 6);
 			myClassNoMembers.MyMethod(42);
 			hitConditionClass.Test();
+			MultilineSwitchInMethodCall.Test();
 			var asyncResult = myAsyncClass.MyMethodAsync(4).GetAwaiter().GetResult();
 			myAsyncMethodEvalClass.Test().GetAwaiter().GetResult();
 			Exceptions.Test(throwException);
