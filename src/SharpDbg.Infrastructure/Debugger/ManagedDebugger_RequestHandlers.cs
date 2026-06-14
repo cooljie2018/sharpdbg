@@ -127,11 +127,11 @@ public partial class ManagedDebugger
 		if (_pendingLaunchInfo is {LaunchRequestConsoleType: LaunchRequestConsoleType.ExternalTerminal or LaunchRequestConsoleType.IntegratedTerminal})
 		{
 			var launchedProcessId = await Task.Run(() => SendRunInTerminalRequest.Invoke(_pendingLaunchInfo)); // get off the dispatcher thread
-			_pendingAttachProcessId = launchedProcessId;
 			_pendingLaunchInfo = null;
+			PerformAttach(launchedProcessId);
+			await DiagnosticClientHelper.DiagnosticClientResumeRuntime(launchedProcessId);
 		}
-		// If we have a pending launch, perform it
-		if (_pendingLaunchInfo != null)
+		else if (_pendingLaunchInfo != null) // If we have a pending launch, perform it
 		{
 			PerformLaunch();
 		}

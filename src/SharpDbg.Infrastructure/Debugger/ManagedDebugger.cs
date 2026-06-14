@@ -38,7 +38,7 @@ public partial class ManagedDebugger
 	public event Action<string, string, string>? OnModuleLoaded;
 	public event Action<string>? OnOutput;
 	public event Action<BreakpointManager.BreakpointInfo>? OnBreakpointChanged;
-	public event Func<LaunchInfo, int?> SendRunInTerminalRequest = null!;
+	public event Func<LaunchInfo, int> SendRunInTerminalRequest = null!;
 
 	public EvalStatus EvalStatus { get; }
 
