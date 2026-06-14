@@ -4,7 +4,8 @@ using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 // Newtonsoft.Json.Linq is required for accessing ConfigurationProperties from LaunchArguments/AttachArguments
 // The Microsoft DAP library uses JToken for dynamic configuration properties
 using Newtonsoft.Json.Linq;
-using SharpDbg.Infrastructure.Debugger.ResponseModels;
+using SharpDbg.Infrastructure.Debugger.Models;
+using SharpDbg.Infrastructure.Debugger.Models.Response;
 using MSBreakpoint = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.Breakpoint;
 using MSThread = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.Thread;
 using MSStackFrame = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages.StackFrame;

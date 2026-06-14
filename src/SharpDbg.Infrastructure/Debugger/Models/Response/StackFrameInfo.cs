@@ -1,4 +1,4 @@
-namespace SharpDbg.Infrastructure.Debugger.ResponseModels;
+namespace SharpDbg.Infrastructure.Debugger.Models.Response;
 
 public class StackFrameInfo
 {

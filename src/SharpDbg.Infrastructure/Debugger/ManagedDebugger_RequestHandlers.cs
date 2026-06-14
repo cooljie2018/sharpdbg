@@ -5,8 +5,8 @@ using Ardalis.GuardClauses;
 using ClrDebug;
 using SharpDbg.Infrastructure.Debugger.ExpressionEvaluator;
 using SharpDbg.Infrastructure.Debugger.ExpressionEvaluator.Compiler;
+using SharpDbg.Infrastructure.Debugger.Models.Response;
 using SharpDbg.Infrastructure.Debugger.PresentationHintModels;
-using SharpDbg.Infrastructure.Debugger.ResponseModels;
 using ZLinq;
 
 namespace SharpDbg.Infrastructure.Debugger;
