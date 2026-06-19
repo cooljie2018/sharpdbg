@@ -10,29 +10,7 @@ internal static class Program
 
 	public static int Main(string[] args)
 	{
-		var interpreter = "vscode";
-		var serverPort = -1;
-		string? logPath = null;
-
-		// Parse command line arguments
-		for (int i = 0; i < args.Length; i++)
-		{
-			if (args[i].StartsWith("--interpreter="))
-			{
-				interpreter = args[i].Substring("--interpreter=".Length);
-			}
-			else if (args[i].StartsWith("--server="))
-			{
-				if (int.TryParse(args[i].Substring("--server=".Length), out var port))
-				{
-					serverPort = port;
-				}
-			}
-			else if (args[i].StartsWith("--engineLogging="))
-			{
-				logPath = args[i].Substring("--engineLogging=".Length);
-			}
-		}
+		var (interpreter, serverPort, logPath) = Arguments.Parse(args);
 
 		//logPath = @"C:\Users\Matthew\Downloads\sharpdbglogs\log.txt";
 		// Setup logging if specified
