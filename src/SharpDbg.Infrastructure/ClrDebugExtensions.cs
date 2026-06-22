@@ -1,12 +1,13 @@
 using ClrDebug;
+using Microsoft.Diagnostics.NETCore.Client;
 
 namespace SharpDbg.Infrastructure;
 
 // https://github.com/lordmilko/ClrDebug/blob/5f46218f4b840ab8a94920623dc263b5f2334138/Samples/NetCore/Program.cs
 public static class ClrDebugExtensions
 {
-	/// resumeHandle should be passed in Launch scenarios, typically not passed in attach scenarios
-	public static CorDebug Automatic(DbgShim dbgshim, int pid, nint? resumeHandle = null)
+	/// pass resumeDiagnosticSuspension true if the process was launched with the DOTNET_DefaultDiagnosticPortSuspend environment variable, and you wish for it to be resumed after RegisterForRuntimeStartup
+	public static CorDebug Automatic(DbgShim dbgshim, int pid, bool resumeDiagnosticSuspension = false)
 	{
 		IntPtr unregisterToken = IntPtr.Zero;
 
@@ -42,14 +43,13 @@ public static class ClrDebugExtensions
 				wait.Set();
 			});
 
-			if (resumeHandle is not null) dbgshim.ResumeProcess(resumeHandle.Value); // Do not step! the CLR may initialize while you're stepping! Either set a breakpoint in the PSTARTUP_CALLBACK or AFTER RegisterForRuntimeStartup
+			if (resumeDiagnosticSuspension) DiagnosticClientResumeRuntime(pid);
 
 			wait.WaitOne();
 		}
 		finally
 		{
 			if (unregisterToken != IntPtr.Zero) dbgshim.UnregisterForRuntimeStartup(unregisterToken);
-			if (resumeHandle is not null) dbgshim.CloseResumeHandle(resumeHandle.Value);
 		}
 
 		//if callbackHR was not S_OK, an error occurred while attempting to register for runtime startup
@@ -115,21 +115,27 @@ public static class ClrDebugExtensions
 		//while (true) Thread.Sleep(1);
 	}
 
-	private static void InitCorDebug(CorDebug cordebug, int pid)
+	// For applications like godot, which start their own CLR, diagnostics IPC may not be available immediately.
+	// Retry until it succeeds.
+	private static void DiagnosticClientResumeRuntime(int debuggeeProcessId)
 	{
-		cordebug.Initialize();
+		var diagnosticsClient = new DiagnosticsClient(debuggeeProcessId);
+		const int maxRetries = 6;
+		var delayMs = 50;
 
-		var cb = new CorDebugManagedCallback();
-		cb.OnAnyEvent += (s, e) => e.Controller.Continue(false);
-		cb.OnLoadModule += LoadModule;
-
-		cordebug.SetManagedHandler(cb);
-
-		cordebug.DebugActiveProcess(pid, false);
-	}
-
-	private static void LoadModule(object? sender, LoadModuleCorDebugManagedCallbackEventArgs e)
-	{
-		Console.WriteLine($"Loaded {e.Module.Name}");
+		for (var attempt = 1; attempt <= maxRetries; attempt++)
+		{
+			try
+			{
+				Thread.Sleep(delayMs);
+				diagnosticsClient.ResumeRuntime();
+				return;
+			}
+			catch (ServerNotAvailableException) when (attempt < maxRetries)
+			{
+				delayMs *= 2;
+			}
+		}
+		diagnosticsClient.ResumeRuntime();
 	}
 }

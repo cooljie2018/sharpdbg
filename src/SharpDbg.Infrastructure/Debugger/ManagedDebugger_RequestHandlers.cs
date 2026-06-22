@@ -42,41 +42,39 @@ public partial class ManagedDebugger
 		var launchInfo = _pendingLaunchInfo;
 		_pendingLaunchInfo = null;
 
-		// Build command line: "program" "arg1" "arg2" ...
-		var commandLine = new StringBuilder();
-		commandLine.Append("dotnet ").Append('"').Append(launchInfo.Program).Append('"');
-		foreach (var arg in launchInfo.Arguments)
-		{
-			commandLine.Append(' ').Append('"').Append(arg.Replace("\"", "\\\"")).Append('"');
-		}
-
-		_logger?.Invoke($"Creating process for launch: {commandLine}");
-
 		// Initialize DbgShim
 		var dbgshim = new DbgShim(NativeLibrary.Load("dbgshim", typeof(ManagedDebugger).Assembly, null));
 
-		// Create process suspended
-		CreateProcessForLaunchResult result;
-		try
+		var processStartInfo = new ProcessStartInfo
 		{
-			result = dbgshim.CreateProcessForLaunch(
-				commandLine.ToString(),
-				bSuspendProcess: true,
-				lpEnvironment: IntPtr.Zero, // TODO: support environment variables
-				lpCurrentDirectory: launchInfo.Cwd);
-		}
-		catch (Exception ex)
+			FileName = "dotnet",
+			ArgumentList = { launchInfo.Program },
+			WorkingDirectory = launchInfo.Cwd ?? Environment.CurrentDirectory,
+			UseShellExecute = false,
+			CreateNoWindow = true,
+			RedirectStandardOutput = false,
+			RedirectStandardError = false,
+			RedirectStandardInput = false,
+		};
+		foreach (var arg in launchInfo.Arguments)
 		{
-			_logger?.Invoke($"CreateProcessForLaunch failed: {ex.GetType().Name}: {ex.Message}");
-			throw;
+			processStartInfo.ArgumentList.Add(arg);
 		}
 
-		var processId = result.ProcessId;
-		var resumeHandle = result.ResumeHandle;
+		foreach (var (key, value) in launchInfo.Env)
+		{
+			processStartInfo.Environment[key] = value;
+		}
+		processStartInfo.Environment["DOTNET_DefaultDiagnosticPortSuspend"] = "1";
+
+		using var process = Process.Start(processStartInfo);
+		if (process is null) throw new InvalidOperationException("Process start failed");
+
+		var processId = process.Id;
 
 		_logger?.Invoke($"Process created suspended with PID: {processId}");
 
-		_corDebug = ClrDebugExtensions.Automatic(dbgshim, processId, resumeHandle);
+		_corDebug = ClrDebugExtensions.Automatic(dbgshim, processId, true);
 		_corDebug.Initialize();
 		_corDebug.SetManagedHandler(_callbacks);
 
