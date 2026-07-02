@@ -603,6 +603,33 @@ public class DebugAdapter : DebugAdapterBase
 		}
 	}
 
+	protected override GotoResponse HandleGotoRequest(GotoArguments arguments)
+	{
+		return base.HandleGotoRequest(arguments);
+	}
+
+	protected override GotoTargetsResponse HandleGotoTargetsRequest(GotoTargetsArguments arguments)
+	{
+		return base.HandleGotoTargetsRequest(arguments);
+		var response = new GotoTargetsResponse
+		{
+			Targets =
+			[
+				new GotoTarget
+				{
+					Id = 0,
+					Label = null,
+					Line = 0,
+					Column = null,
+					EndLine = null,
+					EndColumn = null,
+					InstructionPointerReference = null
+				}
+			]
+		};
+		return response;
+	}
+
 	// Coordinate conversion helpers
 	private int ConvertClientLineToDebugger(int line)
 	{
