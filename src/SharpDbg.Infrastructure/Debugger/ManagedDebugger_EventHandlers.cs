@@ -246,10 +246,9 @@ public partial class ManagedDebugger
 		OnStopped2?.Invoke(corThread.Id, sourceFilePath, line, column, "step", decompiledSourceInfo);
 	}
 
-	private void HandleBreak(object? sender,
-		BreakCorDebugManagedCallbackEventArgs breakCorDebugManagedCallbackEventArgs)
+	private void HandleBreak(object? sender, BreakCorDebugManagedCallbackEventArgs breakEventArgs)
 	{
-		var corThread = breakCorDebugManagedCallbackEventArgs.Thread;
+		var corThread = breakEventArgs.Thread;
 		_asyncStepper?.Disable();
 		if (_stepper is not null)
 		{
@@ -260,14 +259,14 @@ public partial class ManagedDebugger
 		OnStopped?.Invoke(corThread.Id, "pause");
 	}
 
-	private void HandleException(object? sender, ExceptionCorDebugManagedCallbackEventArgs exceptionCorDebugManagedCallbackEventArgs)
+	private void HandleException(object? sender, ExceptionCorDebugManagedCallbackEventArgs exceptionEventArgs)
 	{
 		if (EvalStatus.IsRunning)
 		{
 			ContinueProcess();
 			return;
 		}
-		var corThread = exceptionCorDebugManagedCallbackEventArgs.Thread;
+		var corThread = exceptionEventArgs.Thread;
 		_asyncStepper?.Disable();
 		if (_stepper is not null)
 		{
@@ -275,6 +274,13 @@ public partial class ManagedDebugger
 			_stepper = null;
 		}
 
-		OnStopped?.Invoke(corThread.Id, "exception");
+		if (corThread.ActiveFrame is not CorDebugILFrame ilFrame || GetSourceInfoAtFrame(ilFrame) is not {} sourceInfo)
+		{
+			// If we hit a breakpoint and have no source info, just continue
+			Continue();
+			return;
+		}
+		var (sourceFilePath, line, column, decompiledSourceInfo) = sourceInfo;
+		OnStopped2?.Invoke(corThread.Id, sourceFilePath, line, column, "exception", decompiledSourceInfo);
 	}
 }
