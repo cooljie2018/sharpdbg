@@ -70,12 +70,12 @@ public class AsyncStepper
 		}
 	}
 
-	private readonly Dictionary<long, ModuleInfo> _modules;
+	private readonly Dictionary<CORDB_ADDRESS, ModuleInfo> _modules;
 	private AsyncStep? _currentAsyncStep;
 	private AsyncBreakpoint? _notifyDebuggerBreakpoint;
 	private readonly AsyncLock _lock2 = new AsyncLock();
 
-	public AsyncStepper(Dictionary<long, ModuleInfo> modules, CorDebugManagedCallback managedCallback, ManagedDebugger debugger)
+	public AsyncStepper(Dictionary<CORDB_ADDRESS, ModuleInfo> modules, CorDebugManagedCallback managedCallback, ManagedDebugger debugger)
 	{
 		_modules = modules;
 		_managedCallback = managedCallback;

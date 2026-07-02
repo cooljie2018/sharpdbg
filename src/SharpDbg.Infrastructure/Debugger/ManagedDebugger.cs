@@ -20,7 +20,7 @@ public partial class ManagedDebugger
 	private readonly VariableManager _variableManager;
 	private readonly Action<string>? _logger;
 	private readonly Dictionary<int, CorDebugThread> _threads = new();
-	private readonly Dictionary<long, ModuleInfo> _modules = new();
+	private readonly Dictionary<CORDB_ADDRESS, ModuleInfo> _modules = new();
 	private bool _isAttached;
 	private int? _pendingAttachProcessId;
 	private bool _justMyCode;
