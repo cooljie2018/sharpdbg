@@ -492,7 +492,7 @@ public class DebugAdapter : DebugAdapterBase
 	{
 		return ExecuteWithExceptionHandling(() =>
 		{
-			_debugger.Continue();
+			_debugger.HandleContinueRequest();
 			return new ContinueResponse
 			{
 				AllThreadsContinued = true

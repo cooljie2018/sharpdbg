@@ -118,7 +118,7 @@ public partial class ManagedDebugger
 				// If we have a StepComplete event queued, we want to suppress this breakpoint event and Continue, as this means the breakpoint and the step destination are at the same location.
 				if (_stepper.IsActive is false)
 				{
-					Continue();
+					ContinueWithVariableClear();
 					return;
 				}
 				// Inversely, if the stepper is still Active, ie incomplete, it means the breakpoint occurred before the step destination, and therefore should override/disable/abandon the step, and we should stop at the breakpoint.
@@ -144,7 +144,7 @@ public partial class ManagedDebugger
 				{
 					if (shouldStop is false)
 					{
-						Continue();
+						ContinueWithVariableClear();
 						return;
 					}
 
@@ -158,7 +158,7 @@ public partial class ManagedDebugger
 					if (sourceInfo is null)
 					{
 						SetupStepper(corThread, AsyncStepper.StepType.StepOut);
-						Continue();
+						ContinueWithVariableClear();
 						return;
 					}
 				}
@@ -172,14 +172,14 @@ public partial class ManagedDebugger
 			if (managedBreakpoint.HitCondition is not null && EvaluateHitCondition(managedBreakpoint.HitCount, managedBreakpoint.HitCondition) is false)
 			{
 				_logger?.Invoke($"Hit count condition not met: count={managedBreakpoint.HitCount}, condition={managedBreakpoint.HitCondition}");
-				Continue();
+				ContinueWithVariableClear();
 				return;
 			}
 
 			if (managedBreakpoint.Condition is not null && await EvaluateBreakpointCondition(corThread, managedBreakpoint.Condition) is false)
 			{
 				_logger?.Invoke($"Conditional breakpoint condition not met: {managedBreakpoint.Condition}");
-				Continue();
+				ContinueWithVariableClear();
 				return;
 			}
 
@@ -213,7 +213,7 @@ public partial class ManagedDebugger
 			// also, landing in an async state machine will not have source info, allowing us to keep stepping to the MoveNext
 			// TODO: This should probably be more sophisticated - mark the CorDebugFunction as non user code - `JMCStatus = false`, enable JMC for the stepper and then step over, in case the non user code calls user code, e.g. LINQ methods
 			SetupStepper(corThread, AsyncStepper.StepType.StepIn);
-			Continue();
+			ContinueWithVariableClear();
 			return;
 		}
 		var symbolReader = module.SymbolReader ?? throw new UnreachableException("Source info was found, but no symbol reader is available for the module - this should never happen");
@@ -222,7 +222,7 @@ public partial class ManagedDebugger
 		if (stepCompleteEventArgs.Reason is CorDebugStepReason.STEP_CALL && currentIlOffset < nextUserCodeIlOffset)
 		{
 			SetupStepper(corThread, AsyncStepper.StepType.StepOver);
-			Continue();
+			ContinueWithVariableClear();
 			return;
 		}
 
@@ -236,7 +236,7 @@ public partial class ManagedDebugger
 			if (methodIsNotDebuggable)
 			{
 				SetupStepper(corThread, AsyncStepper.StepType.StepIn);
-				Continue();
+				ContinueWithVariableClear();
 				return;
 			}
 		}
@@ -277,7 +277,7 @@ public partial class ManagedDebugger
 		if (corThread.ActiveFrame is not CorDebugILFrame ilFrame || GetSourceInfoAtFrame(ilFrame) is not {} sourceInfo)
 		{
 			// If we hit a breakpoint and have no source info, just continue
-			Continue();
+			ContinueWithVariableClear();
 			return;
 		}
 		var (sourceFilePath, line, column, decompiledSourceInfo) = sourceInfo;

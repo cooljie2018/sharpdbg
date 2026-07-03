@@ -144,9 +144,14 @@ public partial class ManagedDebugger
 	/// <summary>
 	/// Continue execution
 	/// </summary>
-	public void Continue()
+	public void HandleContinueRequest()
 	{
 		_logger?.Invoke("Continue");
+		ContinueWithVariableClear();
+	}
+
+	private void ContinueWithVariableClear()
+	{
 		Guard.Against.Null(_process);
 		_variableManager.ClearAndDisposeHandleValues();
 		_process.Continue(false);
@@ -186,7 +191,7 @@ public partial class ManagedDebugger
 				{
 					if (useSimpleStepper is false)
 					{
-						Continue();
+						ContinueWithVariableClear();
 						return;
 					}
 				}
@@ -217,7 +222,7 @@ public partial class ManagedDebugger
 					{
 						if (useSimpleStepper is false)
 						{
-							Continue();
+							ContinueWithVariableClear();
 							return;
 						}
 					}
@@ -249,7 +254,7 @@ public partial class ManagedDebugger
 					{
 						if (useSimpleStepper is false)
 						{
-							Continue();
+							ContinueWithVariableClear();
 							return;
 						}
 					}
