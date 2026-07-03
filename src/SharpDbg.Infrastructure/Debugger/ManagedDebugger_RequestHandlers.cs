@@ -198,8 +198,7 @@ public partial class ManagedDebugger
 			}
 
 			var stepper = SetupStepper(thread, AsyncStepper.StepType.StepOver);
-			_variableManager.ClearAndDisposeHandleValues();
-			_process?.Continue(false);
+			ContinueWithVariableClear();
 		}
 	}
 
@@ -229,8 +228,7 @@ public partial class ManagedDebugger
 				}
 
 				var stepper = SetupStepper(thread, AsyncStepper.StepType.StepIn);
-				_variableManager.ClearAndDisposeHandleValues();
-				_process?.Continue(false);
+				ContinueWithVariableClear();
 			}
 		}
 	}
@@ -263,8 +261,7 @@ public partial class ManagedDebugger
 				var stepper = SetupStepper(thread, AsyncStepper.StepType.StepOut);
 				if (stepper is not null)
 				{
-					_variableManager.ClearAndDisposeHandleValues();
-					_process?.Continue(false);
+					ContinueWithVariableClear();
 				}
 			}
 		}
