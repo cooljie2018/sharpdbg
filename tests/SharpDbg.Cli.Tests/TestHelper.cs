@@ -134,9 +134,9 @@ public static partial class TestHelper
 		return debugProtocolHost;
 	}
 
-	public static DebugProtocolHost WithStackTraceRequest(this DebugProtocolHost debugProtocolHost, int threadId, out StackTraceResponse stackTraceResponse)
+	public static DebugProtocolHost WithStackTraceRequest(this DebugProtocolHost debugProtocolHost, int threadId, out StackTraceResponse stackTraceResponse, int? levels = 1)
 	{
-		var stackTraceRequest = new StackTraceRequest { ThreadId = threadId, StartFrame = 0, Levels = 1 };
+		var stackTraceRequest = new StackTraceRequest { ThreadId = threadId, StartFrame = 0, Levels = levels };
 		stackTraceResponse = debugProtocolHost.SendRequestSync(stackTraceRequest);
 		return debugProtocolHost;
 	}
