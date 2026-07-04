@@ -22,9 +22,10 @@ public partial class ManagedDebugger
 	/// <summary>
 	/// Stores the launch request info for use in handling ConfigurationDone
 	/// </summary>
-	public void Launch(LaunchInfo launchInfo)
+	public void Launch(LaunchInfo launchInfo, bool justMyCode)
 	{
 		_logger?.Invoke($"Launching program: {launchInfo.Program} {string.Join(' ', launchInfo.Arguments)}");
+		_justMyCode = justMyCode;
 		_pendingLaunchInfo = launchInfo;
 	}
 

@@ -246,6 +246,7 @@ public class DebugAdapter : DebugAdapterBase
 			var cwd = GetConfigValue<string>(arguments.ConfigurationProperties, "cwd");
 			var env = GetConfigValue<Dictionary<string, string>>(arguments.ConfigurationProperties, "env") ?? [];
 			var stopAtEntry = GetConfigValue<bool?>(arguments.ConfigurationProperties, "stopAtEntry") ?? false;
+			var justMyCode = GetConfigValue<bool?>(arguments.ConfigurationProperties, "justMyCode") ?? true;
 			var console = GetConfigValue<string>(arguments.ConfigurationProperties, "console");
 			var launchRequestConsoleType = console switch
 			{
@@ -267,7 +268,7 @@ public class DebugAdapter : DebugAdapterBase
 
 			try
 			{
-				_debugger.Launch(launchInfo);
+				_debugger.Launch(launchInfo, justMyCode);
 				return new LaunchResponse();
 			}
 			catch (Exception ex)
