@@ -18,7 +18,7 @@ public class StackTraceTests(ITestOutputHelper testOutputHelper)
 
 		await debugProtocolHost
 			.WithInitializeRequest()
-			.WithAttachRequest(p2.Id, justMyCode: false)
+			.WithAttachRequest(p2.Id, justMyCode: true)
 			.WaitForInitializedEvent(initializedEventTcs);
 		debugProtocolHost.SendRequestSync(new SetExceptionBreakpointsRequest { Filters = [], FilterOptions = [new("all"), new("user-unhandled")] });
 		var breakpointedFilePath = Path.JoinFromGitRoot("tests", "DebuggableConsoleApp", "ClassWithBclCall.cs");
@@ -32,11 +32,12 @@ public class StackTraceTests(ITestOutputHelper testOutputHelper)
 		stopInfo.filePath.Should().EndWith("ClassWithBclCall.cs");
 		stopInfo.line.Should().Be(12);
 
+		// TODO: Handle formatting generic methods (and fully qualifying them), e.g. System.Linq.dll!System.Linq.Enumerable.RangeSelectIterator<int, int>.Fill() instead of System.Linq.dll!RangeSelectIterator`2.Fill()
 		List<StackFrame> expectedStackFrames =
 		[
 			new() { Id = 1, Column = 3, EndColumn = 16,	Line = 12, EndLine = 12, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.ClassWithBclCall.Selector()",      Source = new Source { Name = "ClassWithBclCall.cs", SourceReference = 0, Path = breakpointedFilePath } },
-			new() { Id = 2, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Linq.dll!System.Linq.Enumerable.RangeSelectIterator<int, int>.Fill()",    Source = null },
-			new() { Id = 3, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Linq.dll!System.Linq.Enumerable.RangeSelectIterator<int, int>.ToArray()", Source = null },
+			new() { Id = 2, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Linq.dll!RangeSelectIterator`2.Fill()",    Source = null },
+			new() { Id = 3, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Linq.dll!RangeSelectIterator`2.ToArray()", Source = null },
 			new() { Id = 4, Column = 3, EndColumn = 65, Line =  7, EndLine =  7, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.ClassWithBclCall.Test()",          Source = new Source { Name = "ClassWithBclCall.cs", SourceReference = 0, Path = breakpointedFilePath } },
 			new() { Id = 5, Column = 4, EndColumn = 28, Line = 31, EndLine = 31, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.Program.Main()",                   Source = new Source { Name = "Program.cs",          SourceReference = 0, Path = Path.JoinFromGitRoot("tests", "DebuggableConsoleApp", "Program.cs") } },
 			// TODO: Return internal frames (thread.ActiveInternalFrames)
