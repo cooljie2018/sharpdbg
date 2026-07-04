@@ -112,5 +112,7 @@ public class EvalTests(ITestOutputHelper testOutputHelper)
 		evaluateResponse28.Result.Should().Be("5");
 		debugProtocolHost.WithEvaluateRequest(stackFrameId, "myInt * 2", out var evaluateResponse29);
 		evaluateResponse29.Result.Should().Be("10");
+		debugProtocolHost.WithEvaluateRequest(stackFrameId, "enumVar", out var evaluateResponse30);
+		evaluateResponse30.Result.Should().Be("SecondValue");
 	}
 }
