@@ -15,6 +15,7 @@ public static partial class TestHelper
 			var stackTraceRequest = new StackTraceRequest { ThreadId = stoppedEvent.ThreadId!.Value, StartFrame = 0, Levels = 1 };
 			var stackTraceResponse = debugProtocolHost.SendRequestSync(stackTraceRequest);
 			var topFrame = stackTraceResponse.StackFrames.Single();
+			if (topFrame.Source is null) return; // Stop has no source, e.g. exception in library code with JMC Enabled
 			var filePath = topFrame.Source.Path;
 			var line = topFrame.Line;
 			var column = topFrame.Column;
