@@ -1,11 +1,31 @@
+using Ardalis.GuardClauses;
 using ClrDebug;
 using Microsoft.Diagnostics.NETCore.Client;
+using SharpDbg.Infrastructure.Debugger.Models;
 
 namespace SharpDbg.Infrastructure;
 
 // https://github.com/lordmilko/ClrDebug/blob/5f46218f4b840ab8a94920623dc263b5f2334138/Samples/NetCore/Program.cs
 public static class ClrDebugExtensions
 {
+	public static CorDebug Mobile(DbgShim dbgShim, RemoteAttachInfo remoteAttachInfo)
+	{
+		CorDebug corDebug = null!;
+		// Requires ClrDebug 0.4.0, which unfortunately introduced an unrelated bug
+		// Uncomment once a release is available including this fix: https://github.com/lordmilko/ClrDebug/issues/26
+		// var result = Extensions.TryRegisterForRuntimeStartupRemotePort(dbgShim,
+		// 	remoteAttachInfo.Address,
+		// 	remoteAttachInfo.Port,
+		// 	remoteAttachInfo.Platform,
+		// 	remoteAttachInfo.IsServer,
+		// 	remoteAttachInfo.MscordbiPath,
+		// 	remoteAttachInfo.AssembliesPath, out corDebug);
+		// result.ThrowOnNotOK();
+
+		Guard.Against.Null(corDebug);
+		return corDebug;
+	}
+
 	/// pass resumeDiagnosticSuspension true if the process was launched with the DOTNET_DefaultDiagnosticPortSuspend environment variable, and you wish for it to be resumed after RegisterForRuntimeStartup
 	public static CorDebug Automatic(DbgShim dbgshim, int pid, bool resumeDiagnosticSuspension = false)
 	{

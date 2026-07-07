@@ -23,6 +23,7 @@ public partial class ManagedDebugger
 	private readonly Dictionary<int, CorDebugThread> _threads = new();
 	private readonly Dictionary<CORDB_ADDRESS, ModuleInfo> _modules = new();
 	private bool _isAttached;
+	private bool _isRemoteAttach;
 	private int? _pendingAttachProcessId;
 	private bool _justMyCode;
 	private AsyncStepper? _asyncStepper;
@@ -64,6 +65,7 @@ public partial class ManagedDebugger
 			_logger?.Invoke($"Event: {e.GetType().Name}");
 			switch (e)
 			{
+				case LogMessageCorDebugManagedCallbackEventArgs a: HandleLogMessage(sender, a); break;
 				case CreateProcessCorDebugManagedCallbackEventArgs a: HandleProcessCreated(sender, a); break;
 				case ExitProcessCorDebugManagedCallbackEventArgs a: HandleProcessExited(sender, a); break;
 				case CreateThreadCorDebugManagedCallbackEventArgs a: HandleThreadCreated(sender, a); break;
@@ -81,6 +83,12 @@ public partial class ManagedDebugger
 		{
 			_logger?.Invoke($"Error handling event {e.GetType().Name}: {ex}");
 		}
+	}
+
+	private void HandleLogMessage(object? sender, LogMessageCorDebugManagedCallbackEventArgs logMessageEvent)
+	{
+		_logger?.Invoke($"Log: {logMessageEvent.Message}");
+		Continue();
 	}
 
 	/// <summary>
@@ -105,6 +113,24 @@ public partial class ManagedDebugger
 			_logger?.Invoke($"Attached to process: {processId}");
 			SendAllBreakpointEvents();
 		});
+	}
+
+	private void PerformRemoteAttach(RemoteAttachInfo remoteAttachInfo)
+	{
+		_logger?.Invoke($"Attaching to remote process on {remoteAttachInfo.Address}:{remoteAttachInfo.Port}");
+
+		var dbgshim = new DbgShim(NativeLibrary.Load("dbgshim", typeof(ManagedDebugger).Assembly, null));
+		_corDebug = ClrDebugExtensions.Mobile(dbgshim, remoteAttachInfo);
+		_corDebug.SetManagedHandler(_callbacks);
+		try
+		{
+			// It is expected that this does not return a ICorDebugProcess in the remote scenario - it is obtained via the CreateProcess callback instead
+			// ClrDebug throws because it does not expect to receive a null pointer
+			_ = _corDebug.DebugActiveProcess(0, false);
+		} catch { /* */ }
+
+		_logger?.Invoke($"Debugger listening on port {remoteAttachInfo.Port}, awaiting connection from debuggee");
+		_ = Task.Run(SendAllBreakpointEvents);
 	}
 
 	private void SendAllBreakpointEvents()

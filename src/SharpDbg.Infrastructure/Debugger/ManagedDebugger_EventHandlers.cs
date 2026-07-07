@@ -10,6 +10,12 @@ public partial class ManagedDebugger
 	private void HandleProcessCreated(object? sender, CreateProcessCorDebugManagedCallbackEventArgs createProcessCorDebugManagedCallbackEventArgs)
 	{
 		_logger?.Invoke("Process created event");
+		if (_process is null && _isRemoteAttach)
+		{
+			_process = createProcessCorDebugManagedCallbackEventArgs.Process;
+			_isAttached = true;
+			_logger?.Invoke($"Remote debuggee established connection to debugger, PID: {_process.Id}");
+		}
 		Continue();
 	}
 

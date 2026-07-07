@@ -284,15 +284,38 @@ public class DebugAdapter : DebugAdapterBase
 	{
 		return ExecuteWithExceptionHandling(() =>
 		{
+			RemoteAttachInfo? remoteAttachInfo = null;
 			var processId = GetConfigValue<int?>(arguments.ConfigurationProperties, "processId");
 			if (processId is null)
 			{
 				throw new ProtocolException("Missing process ID");
 			}
+			var coreClrMobileDebuggerOptions = GetConfigValue<CoreClrMobileDebuggerOptions>(arguments.ConfigurationProperties, "coreClrMobileDebuggerOptions");
+			if (coreClrMobileDebuggerOptions is not null)
+			{
+				Guard.Against.NullOrWhiteSpace(coreClrMobileDebuggerOptions.Address);
+				Guard.Against.Null(coreClrMobileDebuggerOptions.Port);
+				Guard.Against.NullOrWhiteSpace(coreClrMobileDebuggerOptions.Platform);
+				Guard.Against.Null(coreClrMobileDebuggerOptions.IsServer);
+				Guard.Against.NullOrWhiteSpace(coreClrMobileDebuggerOptions.MscordbiPath);
+				Guard.Against.NullOrWhiteSpace(coreClrMobileDebuggerOptions.AssembliesPath);
+				if (File.Exists(coreClrMobileDebuggerOptions.MscordbiPath) is false) throw new ProtocolException($"coreClrMobileDebuggerOptions.mscordbiPath does not exist: {coreClrMobileDebuggerOptions.MscordbiPath}");
+				if (Directory.Exists(coreClrMobileDebuggerOptions.AssembliesPath) is false) throw new ProtocolException($"coreClrMobileDebuggerOptions.assembliesPath does not exist: {coreClrMobileDebuggerOptions.AssembliesPath}");
+				remoteAttachInfo = new RemoteAttachInfo
+				{
+					Address = coreClrMobileDebuggerOptions.Address,
+					Port = coreClrMobileDebuggerOptions.Port,
+					Platform = coreClrMobileDebuggerOptions.Platform,
+					IsServer = coreClrMobileDebuggerOptions.IsServer,
+					MscordbiPath = coreClrMobileDebuggerOptions.MscordbiPath,
+					AssembliesPath = coreClrMobileDebuggerOptions.AssembliesPath
+				};
+			}
 			var justMyCode = GetConfigValue<bool?>(arguments.ConfigurationProperties, "justMyCode") ?? true;
 			try
 			{
-				_debugger.Attach(processId.Value, justMyCode);
+				if (remoteAttachInfo is null) _debugger.Attach(processId.Value, justMyCode);
+				else _debugger.AttachRemote(remoteAttachInfo, justMyCode);
 				return new AttachResponse();
 			}
 			catch (Exception ex)

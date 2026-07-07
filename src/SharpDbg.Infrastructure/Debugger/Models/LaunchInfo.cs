@@ -9,3 +9,13 @@ public class LaunchInfo
 	public required List<string> Arguments { get; set; }
 	public required Dictionary<string, string> Env { get; set; }
 }
+
+public class RemoteAttachInfo
+{
+	public required string Address { get; set; }
+	public required int Port { get; set; }
+	public required string Platform { get; set; }
+	public required bool IsServer { get; set; }
+	public required string MscordbiPath { get; set; }
+	public required string AssembliesPath { get; set; }
+}

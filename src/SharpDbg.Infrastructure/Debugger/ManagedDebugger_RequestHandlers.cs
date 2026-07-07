@@ -18,6 +18,7 @@ public partial class ManagedDebugger
 {
 	// Store launch info for deferred attach in ConfigurationDone
 	private LaunchInfo? _pendingLaunchInfo;
+	private RemoteAttachInfo? _pendingRemoteAttachInfo;
 
 	/// <summary>
 	/// Stores the launch request info for use in handling ConfigurationDone
@@ -115,6 +116,13 @@ public partial class ManagedDebugger
 		_pendingAttachProcessId = processId;
 	}
 
+	public void AttachRemote(RemoteAttachInfo remoteAttachInfo, bool justMyCode)
+	{
+		_justMyCode = justMyCode;
+		_pendingRemoteAttachInfo = remoteAttachInfo;
+		_isRemoteAttach = true;
+	}
+
 	/// <summary>
 	/// Called when DAP configuration is complete - performs deferred launch or attach
 	/// </summary>
@@ -133,6 +141,11 @@ public partial class ManagedDebugger
 		else if (_pendingLaunchInfo is not null) // If we have a pending launch, perform it
 		{
 			PerformLaunch();
+		}
+		else if (_pendingRemoteAttachInfo is not null)
+		{
+			PerformRemoteAttach(_pendingRemoteAttachInfo);
+			_pendingRemoteAttachInfo = null;
 		}
 		// Otherwise check for pending attach
 		else if (_pendingAttachProcessId.HasValue)
