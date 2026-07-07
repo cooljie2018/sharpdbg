@@ -15,7 +15,7 @@ public static class Exceptions
 			}
 			else if (exceptionToThrow is ExceptionToThrow.ExternalCode)
 			{
-				using var socket = new Socket(new SafeSocketHandle(IntPtr.Zero, true));
+				var myInt = int.Parse("x");
 			}
 		}
 		catch (Exception e)

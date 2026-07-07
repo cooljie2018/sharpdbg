@@ -128,10 +128,10 @@ public class ExceptionTests(ITestOutputHelper testOutputHelper)
 
 		List<StackFrame> expectedStackFrames =
 		[
-			new() { Id = 2, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Net.Sockets.dll!System.Net.Sockets.Socket.LoadSocketTypeFromHandle()", Source = null },
-			new() { Id = 3, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Net.Sockets.dll!System.Net.Sockets.Socket..ctor()",                    Source = null },
-			new() { Id = 4, Column = 5, EndColumn = 76, Line = 18, EndLine = 18, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.Exceptions.Test()",             Source = new Source { Name = "Exceptions.cs", SourceReference = 0, Path = breakpointedFilePath } },
-			new() { Id = 5, Column = 4, EndColumn = 38, Line = 34, EndLine = 34, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.Program.Main()",                Source = new Source { Name = "Program.cs",    SourceReference = 0, Path = Path.JoinFromGitRoot("tests", "DebuggableConsoleApp", "Program.cs") } },
+			new() { Id = 2, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Private.CoreLib.dll!System.Number.ThrowFormatException()", Source = null },
+			new() { Id = 3, Column = 0, EndColumn =  0, Line =  0, EndLine =  0, Name = "System.Private.CoreLib.dll!System.Int32.Parse()",                 Source = null },
+			new() { Id = 4, Column = 5, EndColumn = 32, Line = 18, EndLine = 18, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.Exceptions.Test()", Source = new Source { Name = "Exceptions.cs", SourceReference = 0, Path = breakpointedFilePath } },
+			new() { Id = 5, Column = 4, EndColumn = 38, Line = 34, EndLine = 34, Name = "DebuggableConsoleApp.dll!DebuggableConsoleApp.Program.Main()",    Source = new Source { Name = "Program.cs",    SourceReference = 0, Path = Path.JoinFromGitRoot("tests", "DebuggableConsoleApp", "Program.cs") } },
 		];
 
 		stackTraceResponse2.StackFrames.Should().BeEquivalentTo(expectedStackFrames);
@@ -140,7 +140,7 @@ public class ExceptionTests(ITestOutputHelper testOutputHelper)
 
 		List<Variable> expectedVariables =
 		[
-			new() { Name = "$exception",  EvaluateName = "$exception",  Value = $"System.Net.Sockets.SocketException (10038): An operation was attempted on something that is not a socket.{Environment.NewLine}   at System.Net.Sockets.Socket.LoadSocketTypeFromHandle(SafeSocketHandle handle, AddressFamily& addressFamily, SocketType& socketType, ProtocolType& protocolType, Boolean& blocking, Boolean& isListening, Boolean& isSocket)", Type = "System.Net.Sockets.SocketException", VariablesReference = 2 }
+			new() { Name = "$exception",  EvaluateName = "$exception",  Value = $"System.FormatException: The input string 'x' was not in a correct format.{Environment.NewLine}   at System.Number.ThrowFormatException[TChar](ReadOnlySpan`1 value)", Type = "System.FormatException", VariablesReference = 2 }
 		];
 		debugProtocolHost.WithVariablesRequest(scope.VariablesReference, out var variables);
 
@@ -152,35 +152,30 @@ public class ExceptionTests(ITestOutputHelper testOutputHelper)
 
 		var expectedExceptionInfoResponse = new ExceptionInfoResponse
 		{
-			ExceptionId = "CLR/System.Net.Sockets.SocketException",
-			Description = "Exception thrown: 'System.Net.Sockets.SocketException' in System.Net.Sockets.dll: 'An operation was attempted on something that is not a socket.'",
+			ExceptionId = "CLR/System.FormatException",
+			Description = "Exception thrown: 'System.FormatException' in System.Private.CoreLib.dll: 'The input string 'x' was not in a correct format.'",
 			BreakMode = ExceptionBreakMode.Always,
 			Code = 0,
 			Details = new ExceptionDetails
 			{
-				Message = "An operation was attempted on something that is not a socket.",
-				TypeName = "SocketException",
-				FullTypeName = "System.Net.Sockets.SocketException",
+				Message = "The input string 'x' was not in a correct format.",
+				TypeName = "FormatException",
+				FullTypeName = "System.FormatException",
 				EvaluateName = "$exception",
-				StackTrace = $"   at System.Net.Sockets.Socket.LoadSocketTypeFromHandle(SafeSocketHandle handle, AddressFamily& addressFamily, SocketType& socketType, ProtocolType& protocolType, Boolean& blocking, Boolean& isListening, Boolean& isSocket)",
+				StackTrace = $"   at System.Number.ThrowFormatException[TChar](ReadOnlySpan`1 value)",
 				InnerException = [],
-				FormattedDescription = "**System.Net.Sockets.SocketException:** 'An operation was attempted on something that is not a socket.'",
-				HResult = -2147467259,
-				Source = "System.Net.Sockets"
+				FormattedDescription = "**System.FormatException:** 'The input string 'x' was not in a correct format.'",
+				HResult = -2146233033,
+				Source = "System.Private.CoreLib"
 			}
 		};
 
 		var exceptionInfoResponse = debugProtocolHost.SendRequestSync(new ExceptionInfoRequest(stoppedEvent2.ThreadId.Value));
 		exceptionInfoResponse.Should().BeEquivalentTo(expectedExceptionInfoResponse);
 
-		// new Socket() throws once, is caught internally and then rethrown internally. This raises 2 exception 'stopped' events at the same user code location (when JMC is enabled)
-		// Continue from the second exception stop event
-		var stoppedEvent3 = await debugProtocolHost.WithStepOverRequest(stoppedEvent2.ThreadId!.Value).WaitForStoppedEvent(debugEventTcs);
-		stoppedEvent3.AdditionalProperties.Should().BeEmpty();
-
 		// Now we should land on the catch block
-		var stoppedEvent4 = await debugProtocolHost.WithStepOverRequest(stoppedEvent2.ThreadId!.Value).WaitForStoppedEvent(debugEventTcs);
-		var stopInfo4 = stoppedEvent4.ReadStopInfo();
-		stopInfo4.Should().Be((breakpointedFilePath, 21, 3));
+		var stoppedEvent3 = await debugProtocolHost.WithStepOverRequest(stoppedEvent2.ThreadId!.Value).WaitForStoppedEvent(debugEventTcs);
+		var stopInfo3 = stoppedEvent3.ReadStopInfo();
+		stopInfo3.Should().Be((breakpointedFilePath, 21, 3));
 	}
 }
